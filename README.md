@@ -24,15 +24,6 @@ Jarak	Skala 1–5 (semakin dekat semakin tinggi nilai)
 Metode SAW (Simple Additive Weighting)
 Metode SAW digunakan untuk melakukan evaluasi multi-kriteria dengan menjumlahkan nilai-nilai yang telah dinormalisasi dan dikalikan dengan bobot kriteria. Alternatif dengan skor total tertinggi dianggap sebagai pilihan terbaik.
 
-Cara Menggunakan
-Unduh atau clone repository ini:
-
-bash
-Copy
-Edit
-git clone https://github.com/username/spk-saw-tempat-makan.git
-Buka file index.html menggunakan browser (tidak memerlukan server atau backend).
-
 Struktur File
 bash
 Copy
@@ -40,6 +31,7 @@ Edit
 .
 ├── index.html       # Halaman utama SPK
 ├── README.md        # Dokumentasi
+
 Teknologi yang Digunakan
 HTML5
 
