@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SPK Pemilihan Tempat Makan Mahasiswa (SAW)</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN -->
 </head>
 <body class="bg-gray-100 text-gray-800">
   <div class="max-w-5xl mx-auto mt-10 bg-white p-8 rounded-xl shadow-lg">
@@ -44,9 +45,10 @@
   </div>
 
   <script>
-    const altTable = document.getElementById('alternatifTable');
+    let chartInstance = null; // global chart object
 
     function addRow() {
+      const altTable = document.getElementById('alternatifTable');
       if (!document.getElementById('altTable')) {
         altTable.innerHTML = `<table id="altTable" class="w-full table-auto border mt-4 text-sm">
           <thead>
@@ -118,28 +120,57 @@
         data.push({ nama, nilai });
       }
 
-      const maks = [
-        Math.max(...data.map(d => d.nilai[0])),
-        Math.max(...data.map(d => d.nilai[1])),
-        Math.max(...data.map(d => d.nilai[2])),
-        Math.max(...data.map(d => d.nilai[3])),
-        Math.max(...data.map(d => d.nilai[4]))
-      ];
-
+      const maks = [0, 1, 2, 3, 4].map(i => Math.max(...data.map(d => d.nilai[i])));
       const hasil = data.map(d => {
         const skor = d.nilai.map((v, i) => (v / maks[i]) * weights[i]);
         const total = skor.reduce((a, b) => a + b, 0);
-        return { nama: d.nama, total: total.toFixed(4) };
+        return { nama: d.nama, total: parseFloat(total.toFixed(4)) };
       });
 
       hasil.sort((a, b) => b.total - a.total);
 
       let output = '<ol class="list-decimal list-inside space-y-1">';
-      hasil.forEach(h => {
-        output += `<li>${h.nama} <span class="text-gray-500">(Skor: ${h.total})</span></li>`;
+      hasil.forEach((h, i) => {
+        const icon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+        output += `<li>${icon} ${h.nama} <span class="text-gray-500">(Skor: ${h.total})</span></li>`;
       });
-      output += '</ol>';
+      output += '</ol><canvas id="sawChart" class="mt-6"></canvas>';
       document.getElementById('hasil').innerHTML = output;
+
+      // Chart
+      const ctx = document.getElementById('sawChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: hasil.map(h => h.nama),
+          datasets: [{
+            label: 'Skor SAW',
+            data: hasil.map(h => h.total),
+            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+            borderColor: 'rgba(59, 130, 246, 1)',
+            borderWidth: 1,
+            borderRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 1
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => `Skor: ${ctx.raw}`
+              }
+            }
+          }
+        }
+      });
     }
   </script>
 </body>
