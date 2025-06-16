@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SPK Pemilihan Tempat Makan Mahasiswa (SAW)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <div class="max-w-5xl mx-auto mt-10 bg-white p-8 rounded-xl shadow-lg">
+    <h1 class="text-3xl font-bold text-center text-blue-700 mb-4">SPK Pemilihan Tempat Makan Mahasiswa</h1>
+    <h2 class="text-xl text-center font-semibold mb-6">Metode SAW (Simple Additive Weighting)</h2>
+
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold mb-2">Masukkan Bobot Kriteria (dalam persen, total 100%)</h3>
+      <div id="warning" class="text-red-600 font-bold mb-2"></div>
+      <div class="grid grid-cols-5 gap-4">
+        <div><label class="block text-sm font-medium">QRIS</label><input id="w_qris" type="number" value="10" class="w-full p-2 border rounded" /></div>
+        <div><label class="block text-sm font-medium">Instagramability</label><input id="w_insta" type="number" value="20" class="w-full p-2 border rounded" /></div>
+        <div><label class="block text-sm font-medium">Kenyamanan Nugas</label><input id="w_tugas" type="number" value="20" class="w-full p-2 border rounded" /></div>
+        <div><label class="block text-sm font-medium">Harga Terjangkau</label><input id="w_harga" type="number" value="30" class="w-full p-2 border rounded" /></div>
+        <div><label class="block text-sm font-medium">Jarak</label><input id="w_jarak" type="number" value="20" class="w-full p-2 border rounded" /></div>
+      </div>
+    </div>
+
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold mb-2">Input Pilihan Tempat Makan</h3>
+      <p class="text-sm text-gray-600 mb-2">
+        Petunjuk:<br>
+        QRIS: 0 = Tidak Ada, 1 = Ada<br>
+        Instagramability, Kenyamanan, Harga (Semakin murah semakin tinggi nilai skala), Jarak (Semakin dekat semakin tinggi nilai skala): Skala 1 - 5
+      </p>
+      <div id="alternatifTable"></div>
+      <div class="mt-4 flex gap-2">
+        <button onclick="addRow()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Tambah Tempat Makan</button>
+        <button onclick="hitungSAW()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Hitung SAW</button>
+      </div>
+    </div>
+
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold mb-2">Hasil Ranking</h3>
+      <div id="hasil" class="text-base text-gray-700"></div>
+    </div>
+  </div>
+
+  <script>
+    const altTable = document.getElementById('alternatifTable');
+
+    function addRow() {
+      if (!document.getElementById('altTable')) {
+        altTable.innerHTML = `<table id="altTable" class="w-full table-auto border mt-4 text-sm">
+          <thead>
+            <tr class="bg-blue-700 text-white">
+              <th class="p-2 border">Nama</th>
+              <th class="p-2 border">QRIS (0/1)</th>
+              <th class="p-2 border">Instagramability (1-5)</th>
+              <th class="p-2 border">Kenyamanan (1-5)</th>
+              <th class="p-2 border">Harga (1-5)</th>
+              <th class="p-2 border">Jarak (1-5)</th>
+              <th class="p-2 border"></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>`;
+      }
+
+      const tbody = document.querySelector('#altTable tbody');
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td class="border p-1"><input type="text" class="w-full p-1 border rounded" /></td>
+        <td class="border p-1"><input type="number" min="0" max="1" class="w-full p-1 border rounded" /></td>
+        <td class="border p-1"><input type="number" min="1" max="5" class="w-full p-1 border rounded" /></td>
+        <td class="border p-1"><input type="number" min="1" max="5" class="w-full p-1 border rounded" /></td>
+        <td class="border p-1"><input type="number" min="1" max="5" class="w-full p-1 border rounded" /></td>
+        <td class="border p-1"><input type="number" min="1" max="5" class="w-full p-1 border rounded" /></td>
+        <td class="border p-1 text-center"><button onclick="hapusBaris(this)" class="text-red-600 hover:underline">Hapus</button></td>
+      `;
+      tbody.appendChild(row);
+    }
+
+    function hapusBaris(btn) {
+      const row = btn.closest('tr');
+      row.remove();
+    }
+
+    function hitungSAW() {
+      const totalBobot = [
+        parseFloat(document.getElementById('w_qris').value),
+        parseFloat(document.getElementById('w_insta').value),
+        parseFloat(document.getElementById('w_tugas').value),
+        parseFloat(document.getElementById('w_harga').value),
+        parseFloat(document.getElementById('w_jarak').value)
+      ];
+
+      const total = totalBobot.reduce((a, b) => a + b, 0);
+      if (total !== 100) {
+        document.getElementById('warning').innerText = 'Total bobot harus 100%! Silakan sesuaikan bobot kriteria.';
+        document.getElementById('hasil').innerHTML = '';
+        return;
+      } else {
+        document.getElementById('warning').innerText = '';
+      }
+
+      const weights = totalBobot.map(w => w / 100);
+      const table = document.getElementById('altTable');
+      if (!table || table.rows.length < 2) {
+        document.getElementById('hasil').innerHTML = '<p class="text-red-600 font-bold">Masukkan minimal satu alternatif.</p>';
+        return;
+      }
+
+      const rows = table.getElementsByTagName('tr');
+      const data = [];
+
+      for (let i = 1; i < rows.length; i++) {
+        const cells = rows[i].getElementsByTagName('input');
+        const nama = cells[0].value || `Alternatif ${i}`;
+        const nilai = Array.from(cells).slice(1).map(c => parseFloat(c.value));
+        data.push({ nama, nilai });
+      }
+
+      const maks = [
+        Math.max(...data.map(d => d.nilai[0])),
+        Math.max(...data.map(d => d.nilai[1])),
+        Math.max(...data.map(d => d.nilai[2])),
+        Math.max(...data.map(d => d.nilai[3])),
+        Math.max(...data.map(d => d.nilai[4]))
+      ];
+
+      const hasil = data.map(d => {
+        const skor = d.nilai.map((v, i) => (v / maks[i]) * weights[i]);
+        const total = skor.reduce((a, b) => a + b, 0);
+        return { nama: d.nama, total: total.toFixed(4) };
+      });
+
+      hasil.sort((a, b) => b.total - a.total);
+
+      let output = '<ol class="list-decimal list-inside space-y-1">';
+      hasil.forEach(h => {
+        output += `<li>${h.nama} <span class="text-gray-500">(Skor: ${h.total})</span></li>`;
+      });
+      output += '</ol>';
+      document.getElementById('hasil').innerHTML = output;
+    }
+  </script>
+</body>
+</html>
